@@ -1,25 +1,99 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
+author: "Grzegorz Olszewski"
 output: 
   html_document:
     keep_md: true
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+```
+
+## R Markdown
+
+
+
+
+
 
 ## Loading and preprocessing the data
 
+```{r read}
+unzip('activity.zip')
+df <- read.csv('activity.csv')
+```
 
 
 ## What is mean total number of steps taken per day?
 
+```{r hist}
+
+hist(df$steps, main = "Histogram of steps", xlab = 'Steps')
+
+print(paste('Mean of Steps:',mean(df$steps, na.rm = TRUE)))
+print(paste('Median of Steps:',median(df$steps, na.rm = TRUE)))
+
+```
 
 
 ## What is the average daily activity pattern?
 
+```{r interval}
+df_int <-
+  df %>% group_by(interval) %>% 
+  filter(!is.na(steps)) %>% 
+  summarise(Steps = mean(steps))
 
+plot(df_int, type = "l")
 
+print(paste('Interval with the most amount of steps is:',which.max(df_int$Steps)))
+```
 ## Imputing missing values
+
+
+```{r missing_data}
+
+print(paste("Total number of missing values is:", sum(is.na(df))))
+
+df_clean <-
+  df %>% 
+  group_by(interval) %>% 
+  mutate(steps = ifelse(is.na(steps), mean(steps, na.rm=TRUE), steps))
+
+
+hist(df_clean$steps, main = "Histogram of steps", xlab = 'Steps')
+
+print(paste('Mean of Steps:',mean(df_clean$steps, na.rm = TRUE)))
+print(paste('Median of Steps:',median(df_clean$steps, na.rm = TRUE)))
+
+
+```
+
 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r weekend}
+df_transform <-
+  df_clean %>% 
+  mutate(DayType = ifelse(weekdays(as.Date(date), abbreviate = TRUE) %in% c('Pn','Wt','Śr','Cz','Pt'), 'weekday','weekend')) %>% 
+  group_by(DayType, interval) %>% 
+  summarise(Steps = mean(steps))
+
+
+
+
+ggplot(df_transform, aes(x = interval, y = Steps)) + 
+  facet_grid(DayType~ .) +
+  geom_line(col = 'blue') +
+  labs(y = "Steps",
+       x = "Interval",
+       title = "Number of Steps")
+
+
+```
+
